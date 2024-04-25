@@ -118,7 +118,7 @@ def cross_run_results():
     
 def multi_series_plot(df, columns):
     x = range(df.shape[0])
-    name = columns[0][:-9]
+    name = columns[0][:-9].title()
     
     sns.set_theme(style='whitegrid')
     plt.ticklabel_format(style='plain', useOffset=False)
@@ -134,6 +134,15 @@ def multi_series_plot(df, columns):
     # Show the plot
     plt.legend()
     plt.savefig(f'{name}.png')
+    plt.close()
+    
+    plt.figure(figsize=(6, 7))
+    sns.boxplot(data=df[columns])
+    # Replace labels for better readability
+    plt.xticks(ticks=plt.xticks()[0], labels=['Run #1', 'Run #2', 'Run #3', 'Run #4', 'Run #5'], rotation=45, ha='right')
+    plt.title(name)
+    os.makedirs(f'boxplots', exist_ok=True)
+    plt.savefig(f'./boxplots/{name} Box Plot.png')
     plt.close()
     
 
