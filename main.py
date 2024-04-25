@@ -102,19 +102,21 @@ def cross_run_results():
     multi_run_df = pd.DataFrame()
     target_metrics = ['Bluetooth transmission duration', 'Preprocessing service time', 'Classification service time', 'Phone busy time', 'Phone idle time']
     plot_columns = [[] for _ in range(len(target_metrics))]
+    statistics = {}
     for run in range(1, 6):
         df = run_calculations(run)
         for i, target in enumerate(target_metrics):
-            statistics = get_statistical_results(df[target], target.title(), run)
+            statistics[(run, target)] = get_statistical_results(df[target], target.title(), run)
             multi_run_df[f'{target} (Run #{run})'] = df[target]
             plot_columns[i].append(f'{target} (Run #{run})')
-        
+    
     for pc in plot_columns:
         multi_series_plot(multi_run_df, pc)
         
-        
+    statistical_plots(statistics)
+    
+    
 def multi_series_plot(df, columns):
-    # Plotting using Seaborn
     x = range(df.shape[0])
     name = columns[0][:-9]
     
@@ -133,7 +135,84 @@ def multi_series_plot(df, columns):
     plt.legend()
     plt.savefig(f'{name}.png')
     plt.close()
-        
+    
+
+def statistical_plots(stats):
+    # Pie plot w/ phone busy/idle time
+    target_metrics = ['Phone idle time', 'Phone busy time']
+    
+    # Gets the mean from each run and gets an overall mean for each of the selected metrics
+    means = [np.mean([stats[k]['mean'] for k in stats if k[1] == target]) for target in target_metrics]
+
+    # explode the smallest mean value
+    min_index = means.index(min(means))
+    explode = [0] * len(target_metrics)
+    explode[min_index] = 0.1  # Set explode value to 0.1 for the smallest value
+
+    plt.figure(figsize=(11, 8))
+    wedges, _, _ = plt.pie(means, labels=target_metrics, explode=explode, autopct='%1.1f%%', startangle=140, textprops={'fontsize': 12})
+    total = np.sum(means)
+    legend_labels = [f'Mean {metric.title()}: {value:.3f}ms ({value/total*100:.1f}%)' for metric, value in zip(target_metrics, means)]
+    plt.legend(wedges, legend_labels, loc="lower center", bbox_to_anchor=(0.5, -0.15), fontsize=10)
+    plt.title('Phone Busy and Idle Time (ms)')
+    plt.axis('equal')
+    plt.savefig(f'Phone Busy and Idle Time Pie Plot.png')
+    plt.close()
+    
+    
+    # Pie plot w/ transaction stages mean time
+    target_metrics = ['Bluetooth transmission duration', 'Preprocessing service time', 'Classification service time']
+    
+    # Gets the mean from each run and gets an overall mean for each of the selected metrics
+    means = [np.mean([stats[k]['mean'] for k in stats if k[1] == target]) for target in target_metrics]
+
+    # explode the smallest mean value
+    min_index = means.index(min(means))
+    explode = [0] * len(target_metrics)
+    explode[min_index] = 0.1  # Set explode value to 0.1 for the smallest value
+
+    # Create a pie chart using Matplotlib
+    plt.figure(figsize=(11, 8))
+    # plt.pie(means, labels=target_metrics, autopct='%1.1f%%', startangle=140)
+    wedges, _, _ = plt.pie(means, labels=target_metrics, explode=explode, autopct='%1.1f%%', startangle=140, textprops={'fontsize': 12})
+    total = np.sum(means)
+    legend_labels = [f'Mean {metric.title()}: {value:.3f}ms ({value/total*100:.1f}%)' for metric, value in zip(target_metrics, means)]
+    plt.legend(wedges, legend_labels, loc="lower center", bbox_to_anchor=(0.5, -0.15), fontsize=10)
+    plt.title('Mean Service Times (ms)')
+    plt.axis('equal')
+    plt.savefig(f'Mean Service Times Pie Plot.png')
+    plt.close()
+    
+    
+    # Bar plot w/ mean values and CI
+    # target_metrics = ['Bluetooth transmission duration', 'Preprocessing service time', 'Classification service time']
+    target_metrics = ['Preprocessing service time', 'Classification service time']
+    repeated_targets = target_metrics * 5
+    
+    # Gets the mean from each run
+    means = [stats[k]['mean'] for k in stats for target in target_metrics if k[1] == target]
+    
+    plt.figure(figsize=(7, 7))
+    sns.barplot(x=repeated_targets, y=means, errorbar=("ci", 95), width=0.5)
+    plt.title('Mean Preprocessing and Classification Service Time (95% CI)')
+    plt.ylabel('Time (ms)')
+    plt.savefig(f'Mean Preprocessing and Classification Service Time CI.png')
+    plt.close()
+    
+    
+    # Bar plot w/ mean values and CI
+    target_metrics = ['Bluetooth transmission duration']
+    repeated_targets = target_metrics * 5
+    
+    # Gets the mean from each run
+    means = [stats[k]['mean'] for k in stats for target in target_metrics if k[1] == target]
+    
+    plt.figure(figsize=(7, 7))
+    sns.barplot(x=repeated_targets, y=means, errorbar=("ci", 95), width=0.25)
+    plt.title('Mean Bluetooth Transmission Duration (95% CI)')
+    plt.ylabel('Time (ms)')
+    plt.savefig(f'Mean Bluetooth Transmission Duration CI.png')
+    plt.close()
 
 
 if __name__ == "__main__":
