@@ -25,7 +25,7 @@ def run_calculations(run_num):
     df = df.rename(columns={'Preprocessing end/Classification start': 'Preprocessing end'})
     df['Classification start'] = df['Preprocessing end']
     
-    # The difference between arrival times denotes the time taken by the blutooth transmission 
+    # The difference between arrival times denotes the time taken by the Bluetooth transmission 
     df['Bluetooth transmission duration'] = df['Arrival time'].diff()
     
     # To avoid the synchronization issues between the time on smartwatch and on the phone,
